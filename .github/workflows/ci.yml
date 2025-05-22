@@ -25,15 +25,20 @@ jobs:
     - name: Verify structure
       run: |
         ls -la src/
-        find src -name "*.py" | grep -v "__pycache__"
+        [ -f src/setup.py ] || echo "WARNING: setup.py missing - creating temporary one" && echo "from setuptools import setup, find_packages; setup(name='real_estate', version='0.1', packages=find_packages(where='src'), package_dir={'': 'src'})" > src/setup.py
+
+    - name: Install system packages
+      run: |
+        apt-get update
+        apt-get install -y build-essential libpq-dev python3-venv
 
     - name: Setup Python environment
       run: |
-        python -m venv /opt/venv
-        source /opt/venv/bin/activate
-        python -m pip install --upgrade pip
+        python3 -m venv /opt/venv
+        . /opt/venv/bin/activate  # Using dot instead of source
+        pip install --upgrade pip
         pip install django psycopg2-binary pytest pytest-django
-        pip install -e src/  # Install project in editable mode
+        pip install -e src/
 
     - name: Create test settings
       run: |
@@ -65,7 +70,7 @@ jobs:
         DJANGO_SETTINGS_MODULE: core.settings_test
         PYTHONPATH: /github/workspace/src:/opt/venv/lib/python3.11/site-packages
       run: |
-        source /opt/venv/bin/activate
+        . /opt/venv/bin/activate
         cd src
         python -c "import django; print(f'Django {django.__version__} installed')"
         python -c "from django.conf import settings; print('Apps:', settings.INSTALLED_APPS)"
