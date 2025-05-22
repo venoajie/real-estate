@@ -12,10 +12,34 @@ jobs:
           POSTGRES_DB: test_db
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_pass
+        ports:
+          - 5432:5432
+    
     steps:
-      - uses: actions/checkout@v3
-      - name: Run Tests
-        run: |
-          docker-compose -f docker-compose.yml run --rm web pytest
-      - name: Security Scan
-        uses: anchore/scan-action@v3
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        pip install -r src/requirements/dev.txt
+        pip install pytest pytest-django pytest-cov
+        
+    - name: Run tests
+      env:
+        DATABASE_URL: postgres://test_user:test_pass@localhost:5432/test_db
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      run: |
+        cd src
+        pytest --cov=./ --cov-report=xml
+        
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+
+      # ci.yml additions
+permissions:
+  contents: read
+  packages: write  # For container registry pushes
