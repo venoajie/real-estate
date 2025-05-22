@@ -18,19 +18,20 @@ jobs:
           POSTGRES_PASSWORD: test_pass
         ports:
           - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --name postgres-service  # Explicit container naming
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Verify structure
-      run: |
-        ls -la src/
-        [ -d src/apps ] || { echo "Error: src/apps directory missing"; exit 1; }
-
     - name: Install system packages
       run: |
         apt-get update
-        apt-get install -y build-essential libpq-dev
+        apt-get install -y build-essential libpq-dev postgresql-client
 
     - name: Install Python packages
       run: |
@@ -51,33 +52,39 @@ jobs:
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': '${{ env.POSTGRES_DB }}',
-                'USER': '${{ env.POSTGRES_USER }}',
-                'PASSWORD': '${{ env.POSTGRES_PASSWORD }}',
-                'HOST': 'localhost',
+                'NAME': 'test_db',
+                'USER': 'test_user',
+                'PASSWORD': 'test_pass',
+                'HOST': 'postgres-service',  # Using explicit container name
                 'PORT': '5432',
+                'TEST': {
+                    'NAME': 'test_test_db',
+                },
             }
         }
         EOF
 
-    - name: Configure pytest
+    - name: Verify database connection
       run: |
-        echo "[pytest]" > src/pytest.ini
-        echo "testpaths = apps" >> src/pytest.ini
-        echo "python_files = test_*.py" >> src/pytest.ini
-        echo "DJANGO_SETTINGS_MODULE = core.settings_test" >> src/pytest.ini
+        echo "Waiting for PostgreSQL..."
+        for i in {1..30}; do
+          if pg_isready -h postgres-service -U test_user -d test_db; then
+            echo "PostgreSQL is ready!"
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "PostgreSQL not ready after 60 seconds"
+        exit 1
 
     - name: Run tests
       env:
-        POSTGRES_DB: test_db
-        POSTGRES_USER: test_user
-        POSTGRES_PASSWORD: test_pass
         DJANGO_SETTINGS_MODULE: core.settings_test
         PYTHONPATH: /github/workspace/src
       run: |
         cd src
         python -c "import django; print(f'Django {django.__version__} installed')"
-        python -c "from django.conf import settings; print('Apps:', settings.INSTALLED_APPS)"
+        python -c "from django.conf import settings; print('DB config:', settings.DATABASES['default'])"
         pytest apps/ --cov=apps --cov-report=xml -v
 
     - name: Upload coverage
