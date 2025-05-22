@@ -22,11 +22,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Verify test structure
+    - name: Verify project structure
       run: |
-        echo "Current test structure:"
-        find src/apps -name "test_*.py" -o -name "*tests.py" | grep -v "__pycache__"
-        ls -la src/apps/*/tests/
+        ls -la src/
+        [ -f src/core/__init__.py ] || touch src/core/__init__.py
+        [ -f src/core/settings.py ] || django-admin startproject core src && mv src/core/settings.py src/core/original_settings.py
 
     - name: Install system dependencies
       run: |
@@ -42,7 +42,6 @@ jobs:
 
     - name: Configure Django settings
       run: |
-        mkdir -p src/core/
         echo "import os" > src/core/settings_test.py
         echo "from .settings import *" >> src/core/settings_test.py
         echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': os.getenv('POSTGRES_DB'), 'USER': os.getenv('POSTGRES_USER'), 'PASSWORD': os.getenv('POSTGRES_PASSWORD'), 'HOST': 'localhost', 'PORT': '5432'}}" >> src/core/settings_test.py
@@ -55,18 +54,20 @@ jobs:
         echo "python_classes = *Test Test* *Tests" >> src/pytest.ini
         echo "DJANGO_SETTINGS_MODULE = core.settings_test" >> src/pytest.ini
         echo "addopts = --ds=core.settings_test" >> src/pytest.ini
+        echo "pythonpath = src" >> src/pytest.ini
 
     - name: Run tests
       env:
         POSTGRES_DB: test_db
         POSTGRES_USER: test_user
         POSTGRES_PASSWORD: test_pass
+        DJANGO_SETTINGS_MODULE: core.settings_test
         PYTHONPATH: /github/workspace/src:/github/workspace
       run: |
         cd src
+        python -c "import sys; print(sys.path)"
         python -c "from django.conf import settings; print('DATABASES:', settings.DATABASES)"
-        pytest apps/ --cov=apps --cov-report=xml -v --collect-only
-        pytest apps/ --cov=apps --cov-report=xml -v
+        pytest --cov=apps --cov-report=xml -v
 
     - name: Upload coverage
       uses: codecov/codecov-action@v3
