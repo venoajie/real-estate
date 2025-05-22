@@ -72,7 +72,6 @@ jobs:
                 'PORT': '5432',
             }
         }
-        
         EOF
 
     - name: Verify database connection
@@ -88,6 +87,12 @@ jobs:
         echo "PostgreSQL not ready after 60 seconds"
         exit 1
 
+    - name: Run migrations
+      run: |
+        cd src
+        python manage.py makemigrations
+        python manage.py migrate
+
     - name: Run tests
       env:
         DJANGO_SETTINGS_MODULE: real_estate.settings.test
@@ -95,8 +100,7 @@ jobs:
       run: |
         cd src
         python -m django --version
-        python manage.py check
         pytest apps/ --ds=real_estate.settings.test --cov=apps --cov-report=xml -v
-        
+
     - name: Upload coverage
       uses: codecov/codecov-action@v3
