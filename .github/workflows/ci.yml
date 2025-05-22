@@ -103,4 +103,7 @@ jobs:
         pytest apps/ --ds=real_estate.settings.test --cov=apps --cov-report=xml -v
 
     - name: Upload coverage
-      uses: codecov/codecov-action@v3
+      run: |
+        cd src
+        python -m pip install codecov
+        python -m codecov --file=coverage.xml
