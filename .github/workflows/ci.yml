@@ -22,47 +22,34 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup project structure
+    - name: Verify Python installation
       run: |
-        # Create core package if missing
-        mkdir -p src/core/
-        touch src/core/__init__.py
-        
-        # Create minimal settings.py if missing
-        if [ ! -f src/core/settings.py ]; then
-          echo "Creating default settings.py"
-          echo "SECRET_KEY = 'dummy-key-for-ci'" > src/core/settings.py
-          echo "INSTALLED_APPS = []" >> src/core/settings.py
-        fi
+        python -V
+        pip -V
 
     - name: Install system dependencies
       run: |
         apt-get update
-        apt-get install -y build-essential libpq-dev nodejs npm
+        apt-get install -y build-essential libpq-dev
 
     - name: Install Python packages
       run: |
         python -m pip install --upgrade pip
+        pip list || echo "Pip list failed"
         pip install django psycopg2-binary
-        pip install -r src/apps/requirements/dev.txt
+        pip install -r src/requirements/base.txt
         pip install pytest pytest-cov pytest-django
 
-    - name: Configure test settings
+    - name: Verify Django installation
       run: |
-        echo "import os" > src/core/settings_test.py
-        echo "from .settings import *" >> src/core/settings_test.py
-        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': os.getenv('POSTGRES_DB'), 'USER': os.getenv('POSTGRES_USER'), 'PASSWORD': os.getenv('POSTGRES_PASSWORD'), 'HOST': 'localhost', 'PORT': '5432'}}" >> src/core/settings_test.py
-        echo "INSTALLED_APPS += ['apps.listings']" >> src/core/settings_test.py
+        python -c "import django; print('Django version:', django.__version__)"
 
-    - name: Configure pytest
+    - name: Create test settings
       run: |
-        echo "[pytest]" > src/pytest.ini
-        echo "testpaths = apps" >> src/pytest.ini
-        echo "python_files = test_*.py" >> src/pytest.ini
-        echo "python_classes = *Test Test* *Tests" >> src/pytest.ini
-        echo "DJANGO_SETTINGS_MODULE = core.settings_test" >> src/pytest.ini
-        echo "addopts = --ds=core.settings_test" >> src/pytest.ini
-        echo "pythonpath = ." >> src/pytest.ini
+        mkdir -p src/core/
+        echo "SECRET_KEY = 'test-secret-key'" > src/core/settings_test.py
+        echo "INSTALLED_APPS = ['django.contrib.contenttypes', 'django.contrib.auth', 'apps.listings']" >> src/core/settings_test.py
+        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': '${{ env.POSTGRES_DB }}', 'USER': '${{ env.POSTGRES_USER }}', 'PASSWORD': '${{ env.POSTGRES_PASSWORD }}', 'HOST': 'localhost', 'PORT': '5432'}}" >> src/core/settings_test.py
 
     - name: Run tests
       env:
@@ -70,12 +57,12 @@ jobs:
         POSTGRES_USER: test_user
         POSTGRES_PASSWORD: test_pass
         DJANGO_SETTINGS_MODULE: core.settings_test
-        PYTHONPATH: /github/workspace/src:/github/workspace
+        PYTHONPATH: /github/workspace/src
       run: |
         cd src
         python -c "import sys; print('Python path:', sys.path)"
         python -c "from django.conf import settings; print('Installed apps:', settings.INSTALLED_APPS)"
-        pytest --cov=apps --cov-report=xml -v
+        pytest apps/ --cov=apps --cov-report=xml -v
 
     - name: Upload coverage
       uses: codecov/codecov-action@v3
