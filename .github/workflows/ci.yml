@@ -50,6 +50,18 @@ jobs:
         from .base import *
         
         SECRET_KEY = 'test-key-123'
+        
+        INSTALLED_APPS = [
+            'django.contrib.admin',
+            'django.contrib.auth',
+            'django.contrib.contenttypes',
+            'django.contrib.sessions',
+            'django.contrib.messages',
+            'django.contrib.staticfiles',
+            'apps.listings',
+            'apps.users',
+        ]
+        
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
@@ -60,6 +72,7 @@ jobs:
                 'PORT': '5432',
             }
         }
+        
         EOF
 
     - name: Verify database connection
@@ -82,7 +95,8 @@ jobs:
       run: |
         cd src
         python -m django --version
-        pytest apps/ --cov=apps --cov-report=xml -v
-
+        python manage.py check
+        pytest apps/ --ds=real_estate.settings.test --cov=apps --cov-report=xml -v
+        
     - name: Upload coverage
       uses: codecov/codecov-action@v3
