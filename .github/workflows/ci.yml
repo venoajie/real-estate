@@ -6,7 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     container:
-      image: node:18-bullseye  # Has both Node.js and Python
+      image: node:18-bullseye  # Contains Node.js + Python 3.9 base
       options: --user root
 
     services:
@@ -22,15 +22,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Python system dependencies
+    - name: Install system dependencies
       run: |
         apt-get update
-        apt-get install -y python3 python3-pip python3-dev libpq-dev
+        apt-get install -y build-essential libpq-dev
 
-    - name: Set up Python 3.12
+    - name: Set up Python 3.11 (Stable x64 Version)
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: "3.11"
+        architecture: "x64"  # Force x64 architecture
 
     - name: Install Python packages
       run: |
