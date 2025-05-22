@@ -22,34 +22,40 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Verify Python installation
+    - name: Verify structure
       run: |
-        python -V
-        pip -V
+        ls -la src/
+        find src -name "*.py" | grep -v "__pycache__"
 
-    - name: Install system dependencies
+    - name: Setup Python environment
       run: |
-        apt-get update
-        apt-get install -y build-essential libpq-dev
-
-    - name: Install Python packages
-      run: |
+        python -m venv /opt/venv
+        source /opt/venv/bin/activate
         python -m pip install --upgrade pip
-        pip list || echo "Pip list failed"
-        pip install django psycopg2-binary
-        pip install -r src/requirements/base.txt
-        pip install pytest pytest-cov pytest-django
-
-    - name: Verify Django installation
-      run: |
-        python -c "import django; print('Django version:', django.__version__)"
+        pip install django psycopg2-binary pytest pytest-django
+        pip install -e src/  # Install project in editable mode
 
     - name: Create test settings
       run: |
         mkdir -p src/core/
-        echo "SECRET_KEY = 'test-secret-key'" > src/core/settings_test.py
-        echo "INSTALLED_APPS = ['django.contrib.contenttypes', 'django.contrib.auth', 'apps.listings']" >> src/core/settings_test.py
-        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': '${{ env.POSTGRES_DB }}', 'USER': '${{ env.POSTGRES_USER }}', 'PASSWORD': '${{ env.POSTGRES_PASSWORD }}', 'HOST': 'localhost', 'PORT': '5432'}}" >> src/core/settings_test.py
+        cat << EOF > src/core/settings_test.py
+        SECRET_KEY = 'test-key-123'
+        INSTALLED_APPS = [
+            'django.contrib.auth',
+            'django.contrib.contenttypes',
+            'apps.listings',
+        ]
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': '${{ env.POSTGRES_DB }}',
+                'USER': '${{ env.POSTGRES_USER }}',
+                'PASSWORD': '${{ env.POSTGRES_PASSWORD }}',
+                'HOST': 'localhost',
+                'PORT': '5432',
+            }
+        }
+        EOF
 
     - name: Run tests
       env:
@@ -57,11 +63,12 @@ jobs:
         POSTGRES_USER: test_user
         POSTGRES_PASSWORD: test_pass
         DJANGO_SETTINGS_MODULE: core.settings_test
-        PYTHONPATH: /github/workspace/src
+        PYTHONPATH: /github/workspace/src:/opt/venv/lib/python3.11/site-packages
       run: |
+        source /opt/venv/bin/activate
         cd src
-        python -c "import sys; print('Python path:', sys.path)"
-        python -c "from django.conf import settings; print('Installed apps:', settings.INSTALLED_APPS)"
+        python -c "import django; print(f'Django {django.__version__} installed')"
+        python -c "from django.conf import settings; print('Apps:', settings.INSTALLED_APPS)"
         pytest apps/ --cov=apps --cov-report=xml -v
 
     - name: Upload coverage
