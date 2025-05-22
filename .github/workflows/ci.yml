@@ -4,25 +4,34 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:16
         env:
           POSTGRES_DB: test_db
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_pass
+        options: >-
+          --add-host=host.docker.internal:host-gateway
         ports:
-          - 5432:5432
-    
+          - "5432:5432"
+        # Add any other services your application needs here  
+      
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v4        
+    - name: Install GLIBC dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libc6 libc6-dev
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: "3.11"
-    
+        python-version: "3.13-dev"  # Will work when available
+        allow-prereleases: true
+        activate-environment: python_env
+        environment-file: .github/actions/python-environment.yml
+                
     - name: Install dependencies
       run: |
         pip install -r src/requirements/dev.txt
@@ -38,8 +47,21 @@ jobs:
         
     - name: Upload coverage
       uses: codecov/codecov-action@v3
-
+    - name: Run tests
+      run: |
+        cd src
+        pytest --collect-only -v  # Show what tests would run
+        pytest --cov=. --cov-report=xml
+    - name: Run tests
+      run: |
+        cd src
+        pytest apps/listings/tests/ --cov=apps
       # ci.yml additions
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+
 permissions:
   contents: read
   packages: write  # For container registry pushes
+
+  
