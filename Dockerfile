@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile
-FROM python:3.11-slim as base
-WORKDIR /app
+FROM python:3.12-slim as base
+WORKDIR /apps
 COPY requirements/ .
 RUN pip install --no-cache-dir -r prod.txt
 
