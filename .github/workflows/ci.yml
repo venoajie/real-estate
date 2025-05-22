@@ -30,20 +30,31 @@ jobs:
     - name: Install Python packages
       run: |
         python -m pip install --upgrade pip
-        pip install -r src/apps/requirements/dev.txt pytest pytest-cov pytest-django
+        pip install django psycopg2-binary  # Core Django + PostgreSQL
+        pip install -r src/apps/requirements/dev.txt
+        pip install pytest pytest-cov pytest-django
+
+    - name: Configure Django settings
+      run: |
+        echo "import os" > src/core/settings_test.py
+        echo "from .settings import *" >> src/core/settings_test.py
+        echo "DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': os.getenv('POSTGRES_DB'), 'USER': os.getenv('POSTGRES_USER'), 'PASSWORD': os.getenv('POSTGRES_PASSWORD'), 'HOST': 'localhost', 'PORT': '5432'}}" >> src/core/settings_test.py
 
     - name: Configure pytest
       run: |
         echo "[pytest]" > src/pytest.ini
         echo "testpaths = apps" >> src/pytest.ini
         echo "python_files = test_*.py" >> src/pytest.ini
-        echo "DJANGO_SETTINGS_MODULE = core.settings" >> src/pytest.ini
+        echo "DJANGO_SETTINGS_MODULE = core.settings_test" >> src/pytest.ini
 
     - name: Run tests
       env:
-        DATABASE_URL: postgres://test_user:test_pass@localhost:5432/test_db
+        POSTGRES_DB: test_db
+        POSTGRES_USER: test_user
+        POSTGRES_PASSWORD: test_pass
       run: |
         cd src
+        python manage.py check
         pytest apps/ --cov=apps --cov-report=xml -v
 
     - name: Upload coverage
