@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'django-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:8000']  # Update with your service name
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:9187']  # Postgres exporter port

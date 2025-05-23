@@ -1,0 +1,15 @@
+{
+  "title": "Django Application Metrics",
+  "panels": [
+    {
+      "title": "Request Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(django_http_requests_total[5m])",
+          "legendFormat": "{{handler}}"
+        }
+      ]
+    }
+  ]
+}
