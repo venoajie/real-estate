@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir -r prod.txt
 
 # Stage 2: Development
 FROM python:3.12-slim as dev
+
 WORKDIR /app
 
 # Copy virtual environment
@@ -33,7 +34,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     postgresql-client \
-    netcat && \
+    netcat-openbsd \
+    curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy application
