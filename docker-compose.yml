@@ -38,7 +38,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - .:/app:rw  # Ensure read-write permissions
+      - ./src:/app/src:ro  # Read-only mount for source code
+      - ./manage.py:/app/manage.py:ro
+
     ports:
       - "8000:8000"
     depends_on:
