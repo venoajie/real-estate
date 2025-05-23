@@ -1,7 +1,8 @@
-ARG PLATFORM=amd64  # Default value
+#ARG PLATFORM=amd64  # Default value
+#FROM --platform=$PLATFORM python:3.12-slim as builder
 
 # Stage 1: Builder with virtual environment
-FROM --platform=$PLATFORM python:3.12-slim as builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
