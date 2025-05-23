@@ -40,12 +40,6 @@ RUN apt-get update && \
 
 # Copy application
 COPY . .
-
-# Configure wait script
-COPY wait-for-db.sh /app/
-RUN chmod +x /app/wait-for-db.sh && \
-    dos2unix /app/wait-for-db.sh
-
     
 # Copy entrypoint
 RUN chmod +x /app/wait-for-db.sh && \
