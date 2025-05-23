@@ -21,27 +21,35 @@ services:
     image: redis:7
     ports:
       - "6380:6379"  # Changed port mapping
-    volumes:
-      - redis_data:/data
-
+    command: redis-server --save "" --appendonly no --vm.overcommit_memory=1
+    sysctls:
+      - vm.overcommit_memory=1
+      
   web:
     build:
       context: .
       target: dev
     environment:
-      - REDIS_URL=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=real_estate.settings.development
       - POSTGRES_HOST=db
       - POSTGRES_DB=${POSTGRES_DB:-real_estate}
       - POSTGRES_USER=${POSTGRES_USER:-appuser}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
