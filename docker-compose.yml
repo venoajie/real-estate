@@ -38,8 +38,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - .:/app:rw  # Mount entire project root
-    working_dir: /app  # Set working directory to project root
+      - .:/app/src:rw  # Targeted mount
+    working_dir: /app/src  # Critical fix
     ports:
       - "8000:8000"
     depends_on:
