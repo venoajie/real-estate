@@ -1,8 +1,9 @@
+version: '3.8'
 
 services:
   db:
     platform: linux/arm64
-    image: postgres:16
+    image: arm64v8/postgres:16
     environment:
       POSTGRES_DB: real_estate
       POSTGRES_USER: appuser
@@ -17,10 +18,7 @@ services:
 
   web:
     platform: linux/arm64
-    build:
-      context: .
-      args:
-        - REQUIREMENTS_DIR=requirements
+    build: .
     environment:
       POSTGRES_HOST: db
       POSTGRES_DB: real_estate
