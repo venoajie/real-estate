@@ -2,25 +2,15 @@
 services:
   db:
     platform: linux/arm64
-    image: arm64v8/postgres:16
+    image: postgres:16
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-real_estate}
-      POSTGRES_USER: ${POSTGRES_USER:-appuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
+      POSTGRES_DB: real_estate
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: securepassword
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    platform: linux/arm64
-    image: arm64v8/redis:7-alpine
-    command: redis-server --save "" --appendonly no
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U appuser -d real_estate"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,17 +19,14 @@ services:
     platform: linux/arm64
     build: .
     environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_DB=${POSTGRES_DB:-real_estate}
-      - POSTGRES_USER=${POSTGRES_USER:-appuser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
-      - REDIS_URL=redis://redis:6379/0
+      POSTGRES_HOST: db
+      POSTGRES_DB: real_estate
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: securepassword
     ports:
       - "8000:8000"
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
 volumes:
