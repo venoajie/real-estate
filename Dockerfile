@@ -33,18 +33,15 @@ ENV PATH="/opt/venv/bin:$PATH" \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     postgresql-client \
-    netcat-openbsd \
     curl \
-    dos2unix && \
-    rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy and prepare entrypoint
-COPY docker-entrypoint.sh /app/
+# Copy application
+COPY . .
+
+# Set permissions and prepare entrypoint
 RUN chmod +x /app/docker-entrypoint.sh && \
     dos2unix /app/docker-entrypoint.sh
-
-# Ensure proper permissions for all files
-RUN chmod -R a+rwx /app
 
 EXPOSE 8000
 CMD ["/app/docker-entrypoint.sh"]
