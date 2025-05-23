@@ -1,7 +1,14 @@
 #!/bin/bash
 set -e
 
-# Verify Django can find settings
+echo "=== Debug Info ==="
+echo "Working directory: $(pwd)"
+echo "Contents:"
+ls -la
+echo "Python path: $PYTHONPATH"
+echo "=================="
+
+# Verify settings
 python manage.py check --settings=real_estate.settings.development
 
 # Wait for PostgreSQL
@@ -13,5 +20,5 @@ done
 # Apply migrations
 python manage.py migrate
 
-# Start server (with explicit settings and no reload)
+# Start server
 exec python manage.py runserver 0.0.0.0:8000 --noreload --settings=real_estate.settings.development
