@@ -148,4 +148,18 @@ jobs:
       run: |
         echo "All tests passed and coverage uploaded successfully!"
 
-        
+#steps:
+#1. Checkout
+#2. Fix permissions
+#3. Verify permissions
+#4. System packages
+#5. Python venv
+#6. Pip cache setup
+#7. Install packages
+#8. Verify packages
+#9. Test settings
+#10. DB connection
+#11. Migrations
+#12. Tests
+#13. Coverage upload
+#14. Success notification
