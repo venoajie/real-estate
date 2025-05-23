@@ -19,9 +19,17 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements/prod.txt .
 RUN pip install --no-cache-dir -r prod.txt
 
+
 # Stage 2: Development
 FROM python:3.12-slim as dev
 WORKDIR /app
+
+# Install runtime dependencies (removed dos2unix)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    postgresql-client \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment
 COPY --from=builder /opt/venv /opt/venv
@@ -29,19 +37,11 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH=/app \
     DJANGO_SETTINGS_MODULE=real_estate.settings.development
 
-# Install runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    postgresql-client \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy application
 COPY . .
 
-# Set permissions and prepare entrypoint
-RUN chmod +x /app/docker-entrypoint.sh && \
-    dos2unix /app/docker-entrypoint.sh
+# Set execute permissions only (no dos2unix)
+RUN chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 8000
 CMD ["/app/docker-entrypoint.sh"]
