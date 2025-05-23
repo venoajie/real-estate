@@ -15,8 +15,8 @@ RUN apt-get update && \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install dependencies
-COPY requirements/ .
+# Copy and install production dependencies first (better caching)
+COPY requirements/prod.txt .
 RUN pip install --no-cache-dir -r prod.txt
 
 # Stage 2: Development image
@@ -27,11 +27,11 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE="real_estate.settings.development"
 
-# Install additional dev dependencies
-COPY requirements/ .
+# Copy only what's needed for dev dependencies
+COPY requirements/dev.txt .
 RUN pip install --no-cache-dir -r dev.txt
 
-# Copy application code
+# Copy application code (exclude unnecessary files via .dockerignore)
 COPY . .
 
 # Development server
@@ -48,11 +48,15 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1
 
 # Create non-root user
-RUN useradd -m appuser && chown -R appuser /app
+RUN addgroup --system appuser && \
+    adduser --system --ingroup appuser appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
-# Copy application code
-COPY --chown=appuser . .
+# Copy application code (more selective than dev)
+COPY --chown=appuser:appuser real_estate/ ./real_estate/
+COPY --chown=appuser:appuser manage.py ./
+COPY --chown=appuser:appuser requirements/prod.txt ./
 
 # Gunicorn configuration
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "real_estate.wsgi:application"]
