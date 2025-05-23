@@ -8,8 +8,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --user -r requirements.txt
+# Copy and install production dependencies
+COPY requirements/prod.txt ./requirements/
+RUN pip install --user -r requirements/prod.txt
 
 # Stage 2: Runtime
 FROM python:3.12-slim as dev
@@ -35,4 +36,4 @@ RUN chmod +x wait-for-db.sh
 
 EXPOSE 8000
 
-CMD ["./wait-for-db.sh", "sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["./wait-for-db.sh", "db", "sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
