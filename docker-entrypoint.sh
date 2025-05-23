@@ -7,5 +7,5 @@ set -e
 # Apply migrations
 python manage.py migrate
 
-# Start server
-exec python manage.py runserver 0.0.0.0:8000
+# Start server (with --noreload to prevent background thread)
+exec python manage.py runserver 0.0.0.0:8000 --noreload

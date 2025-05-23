@@ -53,6 +53,10 @@ services:
       timeout: 10s
       retries: 3
       
+    tty: true  # Keep container alive
+    stdin_open: true  # Allow interactive
+    command: ["/app/docker-entrypoint.sh"]
+    
 volumes:
   postgres_data:
   redis_data:
