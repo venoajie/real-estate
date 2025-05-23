@@ -38,7 +38,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - .:/app
+      - .:/app:rw  # Ensure read-write permissions
     ports:
       - "8000:8000"
     depends_on:
@@ -53,6 +53,8 @@ services:
       timeout: 10s
       retries: 3
     
+    tty: true  # Keep container alive
+    stdin_open: true  # Allow interactive
     command: ["/app/docker-entrypoint.sh"]
 
 volumes:
