@@ -1,15 +1,17 @@
 #!/bin/bash
 set -e
 
-echo "Current directory: $(pwd)"
-echo "Files in real_estate/settings/:"
-ls -la src/real_estate/settings/
+# Verify Django can find settings
+python manage.py check --settings=real_estate.settings.development
 
-# Verify settings file exists
-SETTINGS_FILE="src/real_estate/settings/development.py"
-if [ ! -f "$SETTINGS_FILE" ]; then
-  echo "Error: Missing development.py at $SETTINGS_FILE" >&2
-  exit 1
-fi
+# Wait for PostgreSQL
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -c '\q'; do
+  >&2 echo "PostgreSQL is unavailable - sleeping"
+  sleep 2
+done
 
-# Rest of your script...
+# Apply migrations
+python manage.py migrate
+
+# Start server (with explicit settings and no reload)
+exec python manage.py runserver 0.0.0.0:8000 --noreload --settings=real_estate.settings.development

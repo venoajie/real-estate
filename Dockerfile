@@ -1,6 +1,8 @@
 # Stage 1: Builder with virtual environment
 FROM python:3.12-slim as builder
+
 WORKDIR /app
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
@@ -17,11 +19,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install dependencies
 COPY requirements/prod.txt .
-RUN pip install --no-cache-dir -r prod.txt
 
+RUN pip install --no-cache-dir -r prod.txt
 
 # Stage 2: Development
 FROM python:3.12-slim as dev
+
 WORKDIR /app
 
 # Install runtime dependencies (removed dos2unix)
@@ -36,12 +39,16 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH=/app \
     DJANGO_SETTINGS_MODULE=real_estate.settings.development
-
-# Copy application
+    
+# Copy application (preserve structure)
 COPY . .
 
-# Set execute permissions only (no dos2unix)
+# Set execute permissions
 RUN chmod +x /app/docker-entrypoint.sh
 
+# Ensure proper working directory
+WORKDIR /app/src
+
 EXPOSE 8000
+
 CMD ["/app/docker-entrypoint.sh"]
