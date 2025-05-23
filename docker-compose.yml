@@ -46,6 +46,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -54,7 +55,7 @@ services:
       retries: 3
     stdin_open: true  # Keep container open
     tty: true         # Allocate pseudo-TTY
-    
+
 volumes:
   postgres_data:
   redis_data:
