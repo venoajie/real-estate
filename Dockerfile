@@ -38,14 +38,15 @@ RUN apt-get update && \
     dos2unix && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy application
-COPY . .
-    
-# Copy entrypoint
+# Copy scripts first and set permissions
+COPY wait-for-db.sh docker-entrypoint.sh /app/
 RUN chmod +x /app/wait-for-db.sh && \
     chmod +x /app/docker-entrypoint.sh && \
     dos2unix /app/wait-for-db.sh && \
     dos2unix /app/docker-entrypoint.sh
+
+# Copy application code
+COPY . .
 
 EXPOSE 8000
 CMD ["/app/docker-entrypoint.sh"]
