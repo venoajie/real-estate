@@ -23,13 +23,12 @@ COPY requirements/prod.txt .
 RUN pip install --no-cache-dir -r prod.txt
 COPY . .
 
-CMD ["tail", "-f", "/dev/null"]
 
-# Health check and startup script
-#CMD  sh -c "\
-#  until pg_isready -h db -U \$POSTGRES_USER; do \
-#    echo 'Waiting for PostgreSQL...'; \
-#    sleep 2; \
-#  done && \
-#  python manage.py migrate && \
-#  python manage.py runserver 0.0.0.0:8000"
+CMD sh -c "\
+  echo 'Starting application...'; \
+  until pg_isready -h db -U \$POSTGRES_USER; do \
+    echo 'Waiting for PostgreSQL...'; \
+    sleep 2; \
+  done; \
+  python manage.py migrate; \
+  exec python manage.py runserver 0.0.0.0:8000"

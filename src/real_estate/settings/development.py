@@ -1,17 +1,6 @@
+ALLOWED_HOSTS = ['*']
 
-from .base import *
-
-DEBUG = True
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': 5432,
-    }
-}
-
-
+import sys
+if not all(os.getenv(var) for var in ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_HOST']):
+    sys.stderr.write("Error: Missing PostgreSQL environment variables!\n")
+    sys.exit(1)
