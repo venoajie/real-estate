@@ -1,59 +1,37 @@
-# Stage 1: Builder for Python dependencies
-FROM python:3.12-slim as builder
 
-WORKDIR /app
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+# Dockerfile
+FROM python:3.11-slim-bullseye
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 # Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential libpq-dev && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Install poetry
+RUN pip install --upgrade pip && pip install poetry
 
-# Copy and install production dependencies first (better caching)
-COPY requirements/prod.txt .
-RUN pip install --no-cache-dir -r prod.txt
-
-# Stage 2: Development image
-FROM python:3.12-slim as dev
-
+# Set work directory
 WORKDIR /app
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH" \
-    DJANGO_SETTINGS_MODULE="real_estate.settings.development"
+
+# Copy project files
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies
+RUN poetry config virtualenvs.create false && poetry install --no-root
 
 # Copy application code
 COPY . .
 
-# Keep the server running
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+# Expose port
+EXPOSE 8000
 
-
-# Stage 3: Production image
-FROM python:3.12-slim as prod
-
-WORKDIR /app
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH" \
-    DJANGO_SETTINGS_MODULE="real_estate.settings.production" \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Create non-root user
-RUN addgroup --system appuser && \
-    adduser --system --ingroup appuser appuser && \
-    chown -R appuser:appuser /app
-USER appuser
-
-# Copy application code (more selective than dev)
-COPY --chown=appuser:appuser real_estate/ ./real_estate/
-COPY --chown=appuser:appuser manage.py ./
-COPY --chown=appuser:appuser requirements/prod.txt ./
-
-# Gunicorn configuration
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "real_estate.wsgi:application"]
+# Entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
