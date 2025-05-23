@@ -36,10 +36,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-real_estate}
       - POSTGRES_USER=${POSTGRES_USER:-appuser}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
+      - PYTHONUNBUFFERED=1 
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - .:/app:rw  # Mount entire project root
-    working_dir: /app  # Set working directory to project root
+      - ./src:/app/src:rw  # Targeted mount instead of full directory
+    working_dir: /app/src  # Match Dockerfile's WORKDIR
     ports:
       - "8000:8000"
     depends_on:
@@ -52,7 +53,8 @@ services:
       interval: 10s  # Reduced from 30s
       timeout: 5s
       retries: 5
-#    tty: true  # Keep container alive
+      # Add this line
+  #    tty: true  # Keep container alive
 #    stdin_open: true  # Allow interactive
 #    command: ["/app/docker-entrypoint.sh"]
 
