@@ -27,6 +27,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    
+    - name: Fix script permissions
+      run: |
+        find deployment/ -type f -name "*.sh" -exec chmod +x {} \;
+
+
     - name: Install system packages
       run: |
         apt-get update
@@ -37,14 +43,39 @@ jobs:
         python -m venv venv
         . venv/bin/activate
 
-    - name: Install Python packages
-      env:
-        PIP_CACHE_DIR: ${{ env.PIP_CACHE_DIR }}
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install --root-user-action=ignore -r src/requirements/base.txt
-        python -m pip install --root-user-action=ignore psycopg2-binary pytest pytest-django pytest-cov
 
+    - name: Verify script permissions
+      run: |
+        echo "Checking script permissions..."
+        find deployment/ -type f -name "*.sh" -exec ls -la {} \;
+        if find deployment/ -type f -name "*.sh" -not -executable | grep -q .; then
+          echo "Error: Found non-executable scripts"
+          find deployment/ -type f -name "*.sh" -not -executable
+          exit 1
+        fi
+
+    - name: Set up pip cache
+      id: pip-cache
+      run: |
+        python -m pip cache dir > pip_cache_dir.txt
+        echo "dir=$(cat pip_cache_dir.txt)" >> $GITHUB_OUTPUT
+
+    - name: Install Python packages
+      run: |
+        python -m pip install --upgrade pip \
+          --cache-dir ${{ steps.pip-cache.outputs.dir }}
+        python -m pip install --root-user-action=ignore \
+          --cache-dir ${{ steps.pip-cache.outputs.dir }} \
+          -r src/requirements/base.txt
+        python -m pip install --root-user-action=ignore \
+          --cache-dir ${{ steps.pip-cache.outputs.dir }} \
+          psycopg2-binary pytest pytest-django pytest-cov
+
+    - name: Verify installed packages
+      run: |
+        python -m pip list
+        python -c "import django; print(f'Django {django.__version__} installed')"
+          
     - name: Create test settings
       run: |
         mkdir -p src/real_estate/settings/
@@ -89,14 +120,6 @@ jobs:
         echo "PostgreSQL not ready after 60 seconds"
         exit 1
 
-    - name: Verify script permissions
-      run: |
-        if find deployment/ scripts/ monitoring/ -type f -name "*.sh" -not -executable | grep -q .; then
-          echo "Error: Found non-executable scripts"
-          find deployment/ scripts/ monitoring/ -type f -name "*.sh" -not -executable
-          exit 1
-        fi      
-
     - name: Run migrations
       run: |
         cd src
@@ -118,11 +141,6 @@ jobs:
         python -m pip install --root-user-action=ignore codecov
         python -m codecov --file=coverage.xml
       continue-on-error: true  # Optional: prevents job failure if Codecov is down
-
-    - name: Cache pip packages
-      run: |
-        python -m pip cache dir > pip_cache_dir.txt
-        echo "PIP_CACHE_DIR=$(cat pip_cache_dir.txt)" >> $GITHUB_ENV
 
 
     - name: Success notification
