@@ -27,19 +27,12 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE="real_estate.settings.development"
 
-# Copy application code
-COPY . .
-
-ENV PATH="/opt/venv/bin:$PATH" \
-    DJANGO_SETTINGS_MODULE="real_estate.settings.development"
-
-# Copy only what's needed for dev dependencies
+    # Copy only what's needed for dev dependencies
 COPY requirements/dev.txt .
 RUN pip install --no-cache-dir -r dev.txt
 
 # Copy application code (exclude unnecessary files via .dockerignore)
 COPY . .
-
 
 # Keep the server running
 CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
