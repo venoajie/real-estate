@@ -46,6 +46,12 @@ COPY wait-for-db.sh /app/
 RUN chmod +x /app/wait-for-db.sh && \
     dos2unix /app/wait-for-db.sh
 
+    
+# Copy entrypoint
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh && \
+    dos2unix /app/docker-entrypoint.sh
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "./wait-for-db.sh db && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["/app/docker-entrypoint.sh"]
