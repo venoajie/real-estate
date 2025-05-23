@@ -17,7 +17,10 @@ services:
 
   web:
     platform: linux/arm64
-    build: .
+    build:
+      context: .
+      args:
+        - REQUIREMENTS_DIR=requirements
     environment:
       POSTGRES_HOST: db
       POSTGRES_DB: real_estate
