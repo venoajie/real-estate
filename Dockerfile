@@ -1,4 +1,3 @@
-# Modified Dockerfile (process management fix)
 # ARM-optimized Python base
 FROM --platform=linux/arm64 python:3.12-bookworm
 
@@ -23,5 +22,13 @@ COPY requirements/prod.txt .
 RUN pip install --no-cache-dir -r prod.txt
 COPY . .
 
-
-CMD  sh -c "python manage.py runserver 0.0.0.0:8000 --verbosity 3"
+# Health check and startup script
+CMD sh -c "\
+  echo '=> Starting application...'; \
+  until pg_isready -h db -U \$POSTGRES_USER; do \
+    echo 'Waiting for PostgreSQL...'; \
+    sleep 2; \
+  done; \
+  python manage.py migrate; \
+  echo '=> Starting Django server'; \
+  exec python manage.py runserver 0.0.0.0:8000"
