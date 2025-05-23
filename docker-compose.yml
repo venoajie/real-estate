@@ -17,12 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"  # Changed port mapping
+    volumes:
+      - redis_data:/data
+
   web:
     build:
       context: .
-      target: dev  # Change to 'prod' for production
-    command: python manage.py runserver 0.0.0.0:8000
+      target: dev
     environment:
+      - REDIS_URL=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=real_estate.settings.development
       - POSTGRES_HOST=db
       - POSTGRES_DB=${POSTGRES_DB:-real_estate}
@@ -33,25 +40,9 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
-
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-
-  celery:
-    build:
-      context: .
-      target: dev
-    command: celery -A real_estate worker --loglevel=info
-    environment:
-      - DJANGO_SETTINGS_MODULE=real_estate.settings.development
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    depends_on:
       - db
       - redis
 
 volumes:
   postgres_data:
+  redis_data:
