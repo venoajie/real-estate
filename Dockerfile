@@ -46,12 +46,18 @@ ENV PATH="/opt/venv/bin:$PATH" \
 # Copy application (preserve structure)
 COPY . .
 
-# Set execute permissions
-RUN chmod +x /app/docker-entrypoint.sh
 
 # Ensure proper working directory
 WORKDIR /app/src
 
 EXPOSE 8000
 
-CMD ["/app/docker-entrypoint.sh"]
+
+CMD sh -c "\
+  python manage.py check --settings=real_estate.settings.development && \
+  until PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -c '\q'; do \
+    echo 'PostgreSQL unavailable - sleeping'; \
+    sleep 2; \
+  done && \
+  python manage.py migrate && \
+  python manage.py runserver 0.0.0.0:8000 --noreload --settings=real_estate.settings.development"
