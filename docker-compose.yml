@@ -1,7 +1,8 @@
 
 services:
   db:
-    image: postgres:16
+    platform: linux/arm64
+    image: arm64v8/postgres:16
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-real_estate}
       POSTGRES_USER: ${POSTGRES_USER:-appuser}
@@ -9,15 +10,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-real_estate}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7-alpine  # Smaller image
-    ports:
-      - "6380:6379"
+    platform: linux/arm64
+    image: arm64v8/redis:7-alpine
     command: redis-server --save "" --appendonly no
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -26,21 +26,14 @@ services:
       retries: 5
 
   web:
-    platform: linux/arm64/v8
-    build:
-      context: .
-      target: dev
+    platform: linux/arm64
+    build: .
     environment:
-      - DJANGO_SETTINGS_MODULE=real_estate.settings.development
       - POSTGRES_HOST=db
       - POSTGRES_DB=${POSTGRES_DB:-real_estate}
       - POSTGRES_USER=${POSTGRES_USER:-appuser}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
-      - PYTHONUNBUFFERED=1 
       - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./src:/app/src:rw  # Targeted mount instead of full directory
-    working_dir: /app/src  # Match Dockerfile's WORKDIR
     ports:
       - "8000:8000"
     depends_on:
@@ -48,16 +41,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 10s  # Reduced from 30s
-      timeout: 5s
-      retries: 5
-      # Add this line
-  #    tty: true  # Keep container alive
-#    stdin_open: true  # Allow interactive
-#    command: ["/app/docker-entrypoint.sh"]
 
 volumes:
   postgres_data:
-  redis_data:
