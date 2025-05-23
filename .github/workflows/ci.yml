@@ -112,19 +112,14 @@ jobs:
       continue-on-error: true  # Optional: prevents job failure if Codecov is down
 
     - name: Cache pip packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/base.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      run: |
+        python -m pip cache dir > pip_cache_dir.txt
+        echo "PIP_CACHE_DIR=$(cat pip_cache_dir.txt)" >> $GITHUB_ENV
+
 
     - name: Success notification
       if: success()
       run: |
         echo "All tests passed and coverage uploaded successfully!"
 
-        - name: Cache pip packages
-  run: |
-    python -m pip cache dir > pip_cache_dir.txt
-    echo "PIP_CACHE_DIR=$(cat pip_cache_dir.txt)" >> $GITHUB_ENV
+        
