@@ -4,14 +4,16 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_HOST_AUTH_METHOD: trust  # Temporary for development
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10  # Increased retries
+      POSTGRES_DB: ${POSTGRES_DB:-real_estate}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-real_estate}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine  # Smaller image
@@ -30,8 +32,13 @@ services:
       target: dev
     environment:
       - DJANGO_SETTINGS_MODULE=real_estate.settings.development
-      - PYTHONPATH=/app
-      - DEBUG=1
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${POSTGRES_DB:-real_estate}
+      - POSTGRES_USER=${POSTGRES_USER:-appuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - .:/app
     ports:
       - "8000:8000"
     depends_on:
@@ -41,9 +48,8 @@ services:
         condition: service_healthy
     command: []
 
-
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]  # Specific endpoint
       interval: 30s
       timeout: 10s
       retries: 3
