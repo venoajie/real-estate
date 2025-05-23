@@ -21,7 +21,6 @@ RUN pip install --no-cache-dir -r prod.txt
 
 # Stage 2: Development
 FROM python:3.12-slim as dev
-
 WORKDIR /app
 
 # Copy virtual environment
@@ -35,7 +34,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     postgresql-client \
     netcat-openbsd \
-    curl && \
+    curl \
+    dos2unix && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy application
@@ -43,7 +43,8 @@ COPY . .
 
 # Configure wait script
 COPY wait-for-db.sh /app/
-RUN chmod +x wait-for-db.sh
+RUN chmod +x /app/wait-for-db.sh && \
+    dos2unix /app/wait-for-db.sh
 
 EXPOSE 8000
 
