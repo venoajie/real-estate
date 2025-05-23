@@ -1,3 +1,4 @@
+
 # Stage 1: Builder with virtual environment
 FROM python:3.12-slim as builder
 
@@ -25,7 +26,7 @@ RUN pip install --no-cache-dir -r prod.txt
 # Stage 2: Development
 FROM python:3.12-slim as dev
 
-WORKDIR /app/src  # Consistent directory
+WORKDIR /app
 
 # Install runtime dependencies (removed dos2unix)
 RUN apt-get update && \
@@ -44,8 +45,10 @@ ENV PATH="/opt/venv/bin:$PATH" \
 COPY . .
 
 # Set execute permissions
-RUN chmod +x /app/src/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
+# Ensure proper working directory
+WORKDIR /app/src
 
 EXPOSE 8000
 
