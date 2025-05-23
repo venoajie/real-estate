@@ -43,9 +43,6 @@ ENV PATH="/opt/venv/bin:$PATH" \
 # Copy application (preserve structure)
 COPY . .
 
-# Set execute permissions
-RUN chmod +x /app/docker-entrypoint.sh
-
 EXPOSE 8000
 
 CMD ["/app/docker-entrypoint.sh"]
