@@ -1,63 +1,38 @@
-# Stage 1: Builder for Python dependencies
+# Stage 1: Builder
 FROM python:3.12-slim as builder
-
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    PYTHONDONTWRITEBYTECODE=1
 
-# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install --user -r requirements.txt
 
-# Copy and install production dependencies first (better caching)
-COPY requirements/prod.txt .
-RUN pip install --no-cache-dir -r prod.txt
-
-# Stage 2: Development image
+# Stage 2: Runtime
 FROM python:3.12-slim as dev
-
 WORKDIR /app
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH" \
-    DJANGO_SETTINGS_MODULE="real_estate.settings.development"
 
-# Copy application code
+# Copy Python dependencies
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH \
+    PYTHONPATH=/app \
+    DJANGO_SETTINGS_MODULE=real_estate.settings.development
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client netcat && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy application
 COPY . .
 
-# Keep the server running
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
-# Stage 3: Production image
-FROM python:3.12-slim as prod
-
-WORKDIR /app
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH" \
-    DJANGO_SETTINGS_MODULE="real_estate.settings.production" \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Create non-root user
-RUN addgroup --system appuser && \
-    adduser --system --ingroup appuser appuser && \
-    chown -R appuser:appuser /app
-USER appuser
-
-# Copy application code (more selective than dev)
-COPY --chown=appuser:appuser real_estate/ ./real_estate/
-COPY --chown=appuser:appuser manage.py ./
-COPY --chown=appuser:appuser requirements/prod.txt ./
-
-# In dev stage:
-RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client
-
+# Add wait script
 COPY wait-for-db.sh /app/
 RUN chmod +x wait-for-db.sh
 
-# Update CMD to:
-CMD ["./wait-for-db.sh", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+EXPOSE 8000
+
+CMD ["./wait-for-db.sh", "sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
