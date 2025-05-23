@@ -9,13 +9,15 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies with ARM-compatible packages
 RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget gnupg2 && \
+    wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /usr/share/keyrings/postgresql.gpg && \
+    echo "deb [arch=arm64 signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
     postgresql-client-16 \
-    libpq-dev \
-    postgresql-common && \
+    libpq-dev && \
     rm -rf /var/lib/apt/lists/*
-
-# Configure PostgreSQL client paths
+    # Configure PostgreSQL client paths
 RUN ln -s /usr/lib/postgresql/16/bin/* /usr/local/bin/
 
 WORKDIR /app
