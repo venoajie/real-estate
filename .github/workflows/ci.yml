@@ -89,6 +89,14 @@ jobs:
         echo "PostgreSQL not ready after 60 seconds"
         exit 1
 
+    - name: Verify script permissions
+      run: |
+        if find deployment/ scripts/ monitoring/ -type f -name "*.sh" -not -executable | grep -q .; then
+          echo "Error: Found non-executable scripts"
+          find deployment/ scripts/ monitoring/ -type f -name "*.sh" -not -executable
+          exit 1
+        fi      
+
     - name: Run migrations
       run: |
         cd src
