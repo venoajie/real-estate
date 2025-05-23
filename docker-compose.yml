@@ -28,7 +28,7 @@ services:
       retries: 5
 
   web:
-    platform: linux/arm64/v8
+    #platform: linux/arm64/v8
     build:
       context: .
       target: dev
