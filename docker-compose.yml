@@ -49,12 +49,12 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    tty: true  # Keep container alive
-    stdin_open: true  # Allow interactive
-    command: ["/app/docker-entrypoint.sh"]
+      interval: 10s  # Reduced from 30s
+      timeout: 5s
+      retries: 5
+#    tty: true  # Keep container alive
+#    stdin_open: true  # Allow interactive
+#    command: ["/app/docker-entrypoint.sh"]
 
 volumes:
   postgres_data:
