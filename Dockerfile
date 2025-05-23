@@ -48,4 +48,4 @@ RUN chmod +x /app/wait-for-db.sh && \
 
 EXPOSE 8000
 
-CMD ["./wait-for-db.sh", "db", "sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "./wait-for-db.sh db && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
