@@ -1,36 +1,45 @@
-# Stage 1: Builder
+# Stage 1: Builder with virtual environment
 FROM python:3.12-slim as builder
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential libpq-dev && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy and install production dependencies
-COPY requirements/prod.txt ./requirements/
-RUN pip install --user -r requirements/prod.txt
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Stage 2: Runtime
+# Install dependencies
+COPY requirements/prod.txt .
+RUN pip install --no-cache-dir -r prod.txt
+
+# Stage 2: Development
 FROM python:3.12-slim as dev
 WORKDIR /app
 
-# Copy Python dependencies
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH \
+# Copy virtual environment
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH=/app \
     DJANGO_SETTINGS_MODULE=real_estate.settings.development
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client netcat && \
+    apt-get install -y --no-install-recommends \
+    postgresql-client \
+    netcat && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy application
 COPY . .
 
-# Add wait script
+# Configure wait script
 COPY wait-for-db.sh /app/
 RUN chmod +x wait-for-db.sh
 

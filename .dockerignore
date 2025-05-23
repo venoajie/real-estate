@@ -1,10 +1,20 @@
-.git/
-.gitignore
-.env
-*.pyc
-__pycache__/
-*.sqlite3
-*.swp
-*.un~
-Dockerfile.dev
-docker-compose.override.yml
+# .dockerignore
+**/.git
+**/__pycache__
+**/*.py[cod]
+**/.env
+**/.venv
+**/venv
+**/env
+**/node_modules
+**/.idea
+**/*.log
+**/.DS_Store
+**/docker-compose.override.yml
+**/local_settings.py
+
+# Allow these critical files
+!requirements/prod.txt
+!wait-for-db.sh
+!manage.py
+!real_estate/wsgi.py
