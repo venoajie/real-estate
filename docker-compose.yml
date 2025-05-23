@@ -38,9 +38,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ./:/app:rw  # Mount entire project
-    working_dir: /app/src  # Explicit working directory
-
+      - .:/app:rw  # Mount entire project root
+    working_dir: /app  # Set working directory to project root
     ports:
       - "8000:8000"
     depends_on:
@@ -48,13 +47,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
-    
     tty: true  # Keep container alive
     stdin_open: true  # Allow interactive
     command: ["/app/docker-entrypoint.sh"]
